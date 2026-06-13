@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Student Result Calculator</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.0.0/tabler-icons.min.css"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-page:       #F5F5F3;
+    --bg-card:       #FFFFFF;
+    --bg-surface:    #F1EFE8;
+    --bg-tertiary:   #E8E6DF;
+    --text-primary:  #1A1A18;
+    --text-secondary:#5F5E5A;
+    --text-tertiary: #888780;
+    --border-light:  rgba(0,0,0,0.10);
+    --border-med:    rgba(0,0,0,0.18);
+    --radius-md:     8px;
+    --radius-lg:     12px;
+    --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-page:      #1A1A18;
+      --bg-card:      #242422;
+      --bg-surface:   #2C2C2A;
+      --bg-tertiary:  #333331;
+      --text-primary: #F0EEE8;
+      --text-secondary:#B4B2A9;
+      --text-tertiary: #888780;
+      --border-light:  rgba(255,255,255,0.08);
+      --border-med:    rgba(255,255,255,0.14);
+    }
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container { max-width: 600px; margin: 0 auto; }
+
+  .header-row { display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; }
+  .header-icon {
+    width: 48px; height: 48px; border-radius: var(--radius-md);
+    background: #EEEDFE; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .header-icon i { font-size: 24px; color: #534AB7; }
+  .header-text h1 { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+  .header-text p  { font-size: 13px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-size: 11px; font-weight: 600; letter-spacing: .07em;
+    color: var(--text-tertiary); text-transform: uppercase; margin-bottom: 12px;
+  }
+
+  .name-field { margin-bottom: 1.25rem; }
+  .name-field label { font-size: 13px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+
+  .subjects-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .field { display: flex; flex-direction: column; }
+  .field label {
+    font-size: 12px; font-weight: 500; color: var(--text-secondary);
+    margin-bottom: 5px; display: flex; align-items: center; gap: 4px;
+  }
+
+  .input-wrap { position: relative; display: flex; align-items: center; }
+  .input-wrap input {
+    width: 100%;
+    border: 1.5px solid var(--border-med);
+    border-radius: var(--radius-md);
+    padding: 10px 36px 10px 12px;
+    font-size: 15px;
+    font-family: var(--font);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    -moz-appearance: textfield;
+  }
+  .input-wrap input::-webkit-outer-spin-button,
+  .input-wrap input::-webkit-inner-spin-button { -webkit-appearance: none; }
+  .input-wrap input:focus  { border-color: #7F77DD; box-shadow: 0 0 0 3px rgba(127,119,221,.15); }
+  .input-wrap input.valid   { border-color: #3B6D11; box-shadow: 0 0 0 3px rgba(59,109,17,.12); }
+  .input-wrap input.invalid { border-color: #E24B4A; box-shadow: 0 0 0 3px rgba(226,75,74,.13); }
+
+  .input-icon { position: absolute; right: 10px; font-size: 16px; pointer-events: none; opacity: 0; transition: opacity .15s; }
+  .input-icon.show { opacity: 1; }
+  .icon-valid   { color: #3B6D11; }
+  .icon-invalid { color: #A32D2D; }
+
+  .err-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; min-height: 18px; }
+  .err-text { font-size: 12px; color: #A32D2D; display: none; }
+  .err-text.show { display: block; }
+  .err-icon { font-size: 13px; color: #A32D2D; display: none; }
+  .err-icon.show { display: block; }
+  .hint-text { font-size: 12px; color: var(--text-tertiary); }
+  .hint-text.hide { display: none; }
+
+  .valid-count { font-size: 12px; color: var(--text-tertiary); text-align: right; margin-top: 10px; }
+  .valid-count span { color: #3B6D11; font-weight: 600; }
+
+  .err-summary {
+    background: #FCEBEB; border: 0.5px solid #F09595;
+    border-radius: var(--radius-md); padding: 10px 14px;
+    margin-top: 1rem; display: none; align-items: flex-start; gap: 8px;
+  }
+  .err-summary.show { display: flex; }
+  .err-summary i   { color: #A32D2D; font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .err-summary p   { font-size: 13px; color: #791F1F; }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 1rem; }
+
+  .btn-calc {
+    flex: 1; background: #534AB7; color: #fff; border: none;
+    border-radius: var(--radius-md); padding: 12px 16px;
+    font-size: 15px; font-weight: 600; font-family: var(--font);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: background .15s, transform .1s;
+  }
+  .btn-calc:hover  { background: #3C3489; }
+  .btn-calc:active { transform: scale(.98); }
+
+  .btn-reset {
+    background: var(--bg-surface); color: var(--text-secondary);
+    border: 0.5px solid var(--border-med); border-radius: var(--radius-md);
+    padding: 12px 18px; font-size: 14px; font-family: var(--font);
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: background .15s;
+  }
+  .btn-reset:hover { background: var(--bg-tertiary); }
+
+  /* Result card */
+  .result-card { display: none; }
+  .result-card.show { display: block; }
+
+  .result-hero { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 1.25rem; }
+  .student-info { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: #EEEDFE; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 600; color: #534AB7; flex-shrink: 0;
+  }
+  .sname { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+  .sdesc { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+
+  .badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge { font-size: 13px; font-weight: 600; padding: 5px 14px; border-radius: 20px; }
+  .badge-pass  { background: #EAF3DE; color: #27500A; }
+  .badge-fail  { background: #FCEBEB; color: #791F1F; }
+  .grade-aplus { background: #E1F5EE; color: #085041; }
+  .grade-a     { background: #EEEDFE; color: #3C3489; }
+  .grade-bplus { background: #E6F1FB; color: #0C447C; }
+  .grade-b     { background: #E6F1FB; color: #185FA5; }
+  .grade-c     { background: #FAEEDA; color: #633806; }
+  .grade-d     { background: #FAECE7; color: #712B13; }
+  .grade-f     { background: #FCEBEB; color: #791F1F; }
+
+  .metrics { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 1.5rem; }
+  .metric { background: var(--bg-surface); border-radius: var(--radius-md); padding: 14px 12px; text-align: center; }
+  .metric-val { font-size: 22px; font-weight: 600; color: var(--text-primary); line-height: 1.2; }
+  .metric-lbl { font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+
+  /* Animated progress bar */
+  .pbar-section { margin-bottom: 1.5rem; }
+  .pbar-header  { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .pbar-title   { font-size: 12px; font-weight: 500; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+  .pbar-pct     { font-size: 26px; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  .pbar-track {
+    height: 16px; background: var(--bg-surface);
+    border-radius: 8px; overflow: hidden;
+    border: 0.5px solid var(--border-light);
+  }
+  .pbar-fill { height: 100%; border-radius: 8px; width: 0%; transition: none; }
+  .pbar-fill.animate { transition: width 1.1s cubic-bezier(.22,1,.36,1); }
+
+  .pbar-milestones { display: flex; justify-content: space-between; margin-top: 6px; padding: 0 2px; }
+  .pbar-milestone  { font-size: 11px; color: var(--text-tertiary); }
+  .pbar-grade-row  { display: flex; margin-top: 3px; }
+  .grade-seg { text-align: center; font-size: 10px; color: var(--text-tertiary); padding-top: 1px; }
+
+  .divider { border: none; border-top: 0.5px solid var(--border-light); margin: 1rem 0; }
+
+  /* Subject breakdown */
+  .sub-list { display: flex; flex-direction: column; gap: 8px; }
+  .sub-row  {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius-md);
+    background: var(--bg-surface);
+  }
+  .sub-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sub-name { flex: 1; font-size: 13px; color: var(--text-primary); font-weight: 500; }
+  .sub-bar-wrap { flex: 1; min-width: 60px; }
+  .sub-bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; }
+  .sub-bar-fill { height: 100%; border-radius: 2px; width: 0%; transition: none; }
+  .sub-bar-fill.animate { transition: width .9s cubic-bezier(.22,1,.36,1); }
+  .sub-mark { font-size: 14px; font-weight: 600; min-width: 36px; text-align: right; }
+  .sub-mini-badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; min-width: 40px; text-align: center; }
+  .sub-mini-pass { background: #EAF3DE; color: #27500A; }
+  .sub-mini-fail { background: #FCEBEB; color: #791F1F; }
+
+  @media (max-width: 480px) {
+    .subjects-grid { grid-template-columns: 1fr; }
+    .field#f5 { grid-column: span 1; }
+    .metrics  { grid-template-columns: 1fr 1fr; }
+    .metrics .metric:last-child { grid-column: span 2; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header-row">
+    <div class="header-icon"><i class="ti ti-certificate"></i></div>
+    <div class="header-text">
+      <h1>Student result calculator</h1>
+      <p>Enter marks out of 100 · fields validate as you type</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="section-label">Student details</p>
+    <div class="name-field">
+      <label for="sname">Full name <span style="color:var(--text-tertiary);font-weight:400;">(optional)</span></label>
+      <div class="input-wrap"><input type="text" id="sname" placeholder="e.g. Priya Sharma" autocomplete="off"/></div>
+    </div>
+
+    <p class="section-label">Subject marks</p>
+    <div class="subjects-grid">
+
+      <div class="field" id="f1">
+        <label for="s1"><i class="ti ti-math-function"></i>Mathematics</label>
+        <div class="input-wrap">
+          <input type="number" id="s1" placeholder="0 – 100" min="0" max="100" autocomplete="off" aria-describedby="e1"/>
+          <i class="ti ti-check input-icon icon-valid"   id="ok1"></i>
+          <i class="ti ti-alert-circle input-icon icon-invalid" id="bad1"></i>
+        </div>
+        <div class="err-row"><i class="ti ti-info-circle err-icon" id="ei1"></i><span class="err-text" id="e1" role="alert"></span><span class="hint-text" id="h1">Whole number, 0–100</span></div>
+      </div>
+
+      <div class="field" id="f2">
+        <label for="s2"><i class="ti ti-atom"></i>Science</label>
+        <div class="input-wrap">
+          <input type="number" id="s2" placeholder="0 – 100" min="0" max="100" autocomplete="off" aria-describedby="e2"/>
+          <i class="ti ti-check input-icon icon-valid"   id="ok2"></i>
+          <i class="ti ti-alert-circle input-icon icon-invalid" id="bad2"></i>
+        </div>
+        <div class="err-row"><i class="ti ti-info-circle err-icon" id="ei2"></i><span class="err-text" id="e2" role="alert"></span><span class="hint-text" id="h2">Whole number, 0–100</span></div>
+      </div>
+
+      <div class="field" id="f3">
+        <label for="s3"><i class="ti ti-book"></i>English</label>
+        <div class="input-wrap">
+          <input type="number" id="s3" placeholder="0 – 100" min="0" max="100" autocomplete="off" aria-describedby="e3"/>
+          <i class="ti ti-check input-icon icon-valid"   id="ok3"></i>
+          <i class="ti ti-alert-circle input-icon icon-invalid" id="bad3"></i>
+        </div>
+        <div class="err-row"><i class="ti ti-info-circle err-icon" id="ei3"></i><span class="err-text" id="e3" role="alert"></span><span class="hint-text" id="h3">Whole number, 0–100</span></div>
+      </div>
+
+      <div class="field" id="f4">
+        <label for="s4"><i class="ti ti-world"></i>Social studies</label>
+        <div class="input-wrap">
+          <input type="number" id="s4" placeholder="0 – 100" min="0" max="100" autocomplete="off" aria-describedby="e4"/>
+          <i class="ti ti-check input-icon icon-valid"   id="ok4"></i>
+          <i class="ti ti-alert-circle input-icon icon-invalid" id="bad4"></i>
+        </div>
+        <div class="err-row"><i class="ti ti-info-circle err-icon" id="ei4"></i><span class="err-text" id="e4" role="alert"></span><span class="hint-text" id="h4">Whole number, 0–100</span></div>
+      </div>
+
+      <div class="field" id="f5" style="grid-column:span 2;">
+        <label for="s5"><i class="ti ti-cpu"></i>Computer science</label>
+        <div class="input-wrap">
+          <input type="number" id="s5" placeholder="0 – 100" min="0" max="100" autocomplete="off" aria-describedby="e5"/>
+          <i class="ti ti-check input-icon icon-valid"   id="ok5"></i>
+          <i class="ti ti-alert-circle input-icon icon-invalid" id="bad5"></i>
+        </div>
+        <div class="err-row"><i class="ti ti-info-circle err-icon" id="ei5"></i><span class="err-text" id="e5" role="alert"></span><span class="hint-text" id="h5">Whole number, 0–100</span></div>
+      </div>
+
+    </div>
+
+    <p class="valid-count"><span id="vc-num">0</span> of 5 fields complete</p>
+
+    <div class="err-summary" id="err-summary">
+      <i class="ti ti-alert-triangle"></i>
+      <p id="err-summary-text"></p>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-calc" onclick="calculate()"><i class="ti ti-chart-bar" style="font-size:18px;"></i>Calculate result</button>
+      <button class="btn-reset" onclick="resetForm()"><i class="ti ti-refresh" style="font-size:17px;"></i>Reset</button>
+    </div>
+  </div>
+
+  <div class="card result-card" id="result-card">
+    <div class="result-hero">
+      <div class="student-info">
+        <div class="avatar" id="res-avatar">?</div>
+        <div>
+          <p class="sname" id="res-name">—</p>
+          <p class="sdesc">Academic result summary</p>
+        </div>
+      </div>
+      <div class="badges">
+        <span class="badge" id="grade-badge"></span>
+        <span class="badge" id="status-badge"></span>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-val" id="res-total">—</div><div class="metric-lbl">Total marks</div></div>
+      <div class="metric"><div class="metric-val" id="res-pct">—</div><div class="metric-lbl">Percentage</div></div>
+      <div class="metric"><div class="metric-val" id="res-rank" style="color:#534AB7;">—</div><div class="metric-lbl">Class rank</div></div>
+    </div>
+
+    <div class="pbar-section">
+      <div class="pbar-header">
+        <span class="pbar-title"><i class="ti ti-trending-up" style="font-size:15px;"></i>Overall performance</span>
+        <span class="pbar-pct" id="pbar-pct-display">0%</span>
+      </div>
+      <div class="pbar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="pbar-track">
+        <div class="pbar-fill" id="pbar-fill"></div>
+      </div>
+      <div class="pbar-milestones">
+        <span class="pbar-milestone">0</span>
+        <span class="pbar-milestone">35 pass</span>
+        <span class="pbar-milestone">50</span>
+        <span class="pbar-milestone">75</span>
+        <span class="pbar-milestone">100</span>
+      </div>
+      <div class="pbar-grade-row">
+        <div class="grade-seg" style="flex:35;">F</div>
+        <div class="grade-seg" style="flex:5;">D</div>
+        <div class="grade-seg" style="flex:10;">C</div>
+        <div class="grade-seg" style="flex:10;">B</div>
+        <div class="grade-seg" style="flex:10;">B+</div>
+        <div class="grade-seg" style="flex:10;">A</div>
+        <div class="grade-seg" style="flex:10;">A+</div>
+      </div>
+    </div>
+
+    <hr class="divider"/>
+    <p class="section-label">Subject breakdown</p>
+    <div class="sub-list" id="sub-list"></div>
+  </div>
+
+</div>
+<script>
+const SUBJECTS=[
+  {name:'Mathematics',     icon:'ti-math-function',color:'#534AB7',bg:'#EEEDFE'},
+  {name:'Science',         icon:'ti-atom',          color:'#1D9E75',bg:'#E1F5EE'},
+  {name:'English',         icon:'ti-book',          color:'#185FA5',bg:'#E6F1FB'},
+  {name:'Social studies',  icon:'ti-world',          color:'#854F0B',bg:'#FAEEDA'},
+  {name:'Computer science',icon:'ti-cpu',            color:'#993C1D',bg:'#FAECE7'}
+];
+
+function errMsg(v){
+  if(v.trim()==='') return 'This field is required — please enter a mark.';
+  const n=Number(v);
+  if(isNaN(n)) return 'Enter a valid number.';
+  if(n<0) return 'Marks cannot be negative.';
+  if(n>100) return 'Marks cannot exceed 100.';
+  if(!Number.isInteger(n)) return 'Enter a whole number (no decimals).';
+  return null;
+}
+
+function setField(i,state,msg){
+  const inp=document.getElementById('s'+i);
+  const ok=document.getElementById('ok'+i);
+  const bad=document.getElementById('bad'+i);
+  const et=document.getElementById('e'+i);
+  const ei=document.getElementById('ei'+i);
+  const ht=document.getElementById('h'+i);
+  inp.classList.remove('valid','invalid');
+  ok.classList.remove('show'); bad.classList.remove('show');
+  et.classList.remove('show'); ei.classList.remove('show');
+  ht.classList.remove('hide');
+  if(state==='valid'){inp.classList.add('valid');ok.classList.add('show');ht.classList.add('hide');}
+  else if(state==='invalid'){inp.classList.add('invalid');bad.classList.add('show');et.textContent=msg;et.classList.add('show');ei.classList.add('show');ht.classList.add('hide');}
+}
+
+function updateCounter(){
+  let c=0;
+  for(let i=1;i<=5;i++){if(!errMsg(document.getElementById('s'+i).value))c++;}
+  document.getElementById('vc-num').textContent=c;
+}
+
+for(let i=1;i<=5;i++){
+  (function(idx){
+    const inp=document.getElementById('s'+idx);
+    inp.addEventListener('input',function(){
+      const msg=errMsg(this.value);
+      if(this.value.trim()==='') setField(idx,'neutral','');
+      else if(msg) setField(idx,'invalid',msg);
+      else setField(idx,'valid','');
+      updateCounter();
+    });
+    inp.addEventListener('blur',function(){
+      if(this.value.trim()!==''){
+        const msg=errMsg(this.value);
+        if(msg) setField(idx,'invalid',msg); else setField(idx,'valid','');
+      }
+      updateCounter();
+    });
+  })(i);
+}
+
+function gradeInfo(pct){
+  if(pct>=90) return{g:'A+',cls:'grade-aplus',bar:'#1D9E75'};
+  if(pct>=80) return{g:'A', cls:'grade-a',    bar:'#534AB7'};
+  if(pct>=70) return{g:'B+',cls:'grade-bplus',bar:'#378ADD'};
+  if(pct>=60) return{g:'B', cls:'grade-b',    bar:'#378ADD'};
+  if(pct>=50) return{g:'C', cls:'grade-c',    bar:'#BA7517'};
+  if(pct>=40) return{g:'D', cls:'grade-d',    bar:'#D85A30'};
+  return           {g:'F', cls:'grade-f',    bar:'#E24B4A'};
+}
+
+function rankLabel(pct){
+  if(pct>=90) return 'Distinction';
+  if(pct>=75) return 'First class';
+  if(pct>=60) return 'Second class';
+  if(pct>=50) return 'Pass class';
+  return 'Below pass';
+}
+
+function initials(name){
+  const p=name.trim().split(/\s+/);
+  if(p.length>=2) return(p[0][0]+p[p.length-1][0]).toUpperCase();
+  return name.slice(0,2).toUpperCase()||'ST';
+}
+
+function animateCounter(el,target,duration){
+  const start=performance.now();
+  function step(now){
+    const t=Math.min((now-start)/duration,1);
+    const ease=1-Math.pow(1-t,4);
+    el.textContent=parseFloat((ease*target).toFixed(2))+'%';
+    if(t<1) requestAnimationFrame(step);
+    else el.textContent=target+'%';
+  }
+  requestAnimationFrame(step);
+}
+
+function calculate(){
+  let invalid=[];
+  for(let i=1;i<=5;i++){
+    const v=document.getElementById('s'+i).value;
+    const msg=errMsg(v);
+    if(msg){setField(i,'invalid',msg);invalid.push(SUBJECTS[i-1].name);}
+    else setField(i,'valid','');
+  }
+  updateCounter();
+  const sumEl=document.getElementById('err-summary');
+  if(invalid.length>0){
+    document.getElementById('err-summary-text').textContent='Please fix '+invalid.length+' field'+(invalid.length>1?'s':'')+': '+invalid.join(', ')+'.';
+    sumEl.classList.add('show');
+    document.getElementById('result-card').classList.remove('show');
+    return;
+  }
+  sumEl.classList.remove('show');
+
+  const marks=[1,2,3,4,5].map(i=>parseFloat(document.getElementById('s'+i).value));
+  const total=marks.reduce((a,b)=>a+b,0);
+  const pct=parseFloat((total/5).toFixed(2));
+  const pass=marks.every(m=>m>=35);
+  const gi=gradeInfo(pct);
+  const name=document.getElementById('sname').value.trim()||'Student';
+
+  document.getElementById('res-avatar').textContent=initials(name);
+  document.getElementById('res-name').textContent=name;
+  document.getElementById('res-total').textContent=total+' / 500';
+  document.getElementById('res-pct').textContent=pct+'%';
+  document.getElementById('res-rank').textContent=rankLabel(pct);
+
+  const gb=document.getElementById('grade-badge');
+  gb.textContent='Grade '+gi.g; gb.className='badge '+gi.cls;
+  const sb=document.getElementById('status-badge');
+  sb.textContent=pass?'Pass':'Fail'; sb.className='badge '+(pass?'badge-pass':'badge-fail');
+
+  const card=document.getElementById('result-card');
+  card.classList.add('show');
+  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  const fill=document.getElementById('pbar-fill');
+  const track=document.getElementById('pbar-track');
+  const pctDisplay=document.getElementById('pbar-pct-display');
+  fill.classList.remove('animate');
+  fill.style.width='0%';
+  fill.style.background=gi.bar;
+  track.setAttribute('aria-valuenow',pct);
+  pctDisplay.textContent='0%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    fill.classList.add('animate');
+    fill.style.width=pct+'%';
+    animateCounter(pctDisplay,pct,1100);
+  }));
+
+  const list=document.getElementById('sub-list');
+  list.innerHTML='';
+  marks.forEach((m,i)=>{
+    const s=SUBJECTS[i]; const subPass=m>=35; const subGi=gradeInfo(m);
+    const row=document.createElement('div');
+    row.className='sub-row';
+    row.innerHTML=`
+      <div class="sub-icon" style="background:${s.bg};"><i class="ti ${s.icon}" style="font-size:16px;color:${s.color};"></i></div>
+      <span class="sub-name">${s.name}</span>
+      <div class="sub-bar-wrap"><div class="sub-bar"><div class="sub-bar-fill" id="sbf${i}" style="background:${subGi.bar};"></div></div></div>
+      <span class="sub-mark" style="color:${subPass?'var(--text-primary)':'#A32D2D'};">${m}</span>
+      <span class="sub-mini-badge ${subPass?'sub-mini-pass':'sub-mini-fail'}">${subGi.g}</span>`;
+    list.appendChild(row);
+    setTimeout(()=>{
+      const sf=document.getElementById('sbf'+i);
+      sf.classList.add('animate'); sf.style.width=m+'%';
+    },200+i*120);
+  });
+}
+
+function resetForm(){
+  for(let i=1;i<=5;i++){document.getElementById('s'+i).value='';setField(i,'neutral','');}
+  document.getElementById('sname').value='';
+  document.getElementById('err-summary').classList.remove('show');
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('vc-num').textContent='0';
+  const fill=document.getElementById('pbar-fill');
+  fill.classList.remove('animate'); fill.style.width='0%';
+  document.getElementById('pbar-pct-display').textContent='0%';
+}
+</script>
+</body>
+</html>
